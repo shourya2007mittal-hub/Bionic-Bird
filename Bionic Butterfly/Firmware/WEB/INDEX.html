@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bionic Butterfly Flight Deck</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #121214;
+            color: #e2e8f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
+        }
+        header {
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+            background: #1a1a1e;
+            border-bottom: 1px solid #2d2d34;
+        }
+        h1 { margin: 0; font-size: 1.5rem; color: #38bdf8; }
+        #status { font-size: 0.9rem; color: #94a3b8; margin-top: 5px; }
+        
+        .btn {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:active { background: #0369a1; }
+        .btn:disabled { background: #475569; cursor: not-allowed; }
+
+        #joystick-container {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            background: #1a1a1e;
+            border: 4px solid #38bdf8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 60px;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+        }
+        #joystick-knob {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: #38bdf8;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            cursor: grab;
+        }
+        
+        #telemetry {
+            font-family: monospace;
+            background: #1a1a1e;
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            border: 1px solid #2d2d34;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Bionic Butterfly Controller</h1>
+        <div id="status">Disconnected</div>
+    </header>
+
+    <div>
+        <button id="connectBtn" class="btn">Connect Butterfly</button>
+    </div>
+
+    <div id="telemetry">
+        Roll (X): 0.00 | Throttle (Y): 0.00
+    </div>
+
+    <div id="joystick-container">
+        <div id="joystick-knob"></div>
+    </div>
+
+    <script>
+        const SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb";
+        const CHARACTERISTIC_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb";
+
+        let bleDevice = null;
+        let txCharacteristic = null;
+        let transmitInterval = null;
+
+        let joyX = 0; 
+        let joyY = 0; 
+
+        const connectBtn = document.getElementById('connectBtn');
+        const statusDiv = document.getElementById('status');
+        const telemetryDiv = document.getElementById('telemetry');
+        const knob = document.getElementById('joystick-knob');
+        const container = document.getElementById('joystick-container');
+
+        connectBtn.addEventListener('click', async () => {
+            try {
+                statusDiv.innerText = "Scanning for Butterfly...";
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ name: 'BionicButterfly-FC' }],
+                    optionalServices: [SERVICE_UUID]
+                });
+
+                statusDiv.innerText = "Connecting...";
+                const server = await bleDevice.gatt.connect();
+                const service = await server.getPrimaryService(SERVICE_UUID);
+                txCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+                statusDiv.innerText = "Connected & Ready";
+                statusDiv.style.color = "#4ade80";
+                connectBtn.disabled = true;
+
+                transmitInterval = setInterval(sendDataPacket, 20);
+
+                bleDevice.addEventListener('gattserverdisconnected', () => {
+                    clearInterval(transmitInterval);
+                    statusDiv.innerText = "Disconnected";
+                    statusDiv.style.color = "#ef4444";
+                    connectBtn.disabled = false;
+                });
+
+            } catch (error) {
+                console.error(error);
+                statusDiv.innerText = "Connection Failed";
+                statusDiv.style.color = "#ef4444";
+            }
+        });
+
+        function sendDataPacket() {
+            if (!txCharacteristic) return;
+            const buffer = new ArrayBuffer(2);
+            const view = new DataView(buffer);
+            view.setInt8(0, joyX); 
+            view.setInt8(1, joyY); 
+
+            txCharacteristic.writeValueWithoutResponse(buffer)
+                .catch(err => console.log("Packet dropped:", err));
+
+            telemetryDiv.innerText = `Roll (X): ${(joyX/100).toFixed(2)} | Throttle (Y): ${(joyY/100).toFixed(2)}`;
+        }
+
+        const rect = container.getBoundingClientRect();
+        const center = rect.width / 2;
+        const maxRadius = center - knob.offsetWidth / 2;
+
+        function handleTouch(e) {
+            e.preventDefault();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const containerRect = container.getBoundingClientRect();
+            let x = clientX - containerRect.left - center;
+            let y = clientY - containerRect.top - center;
+
+            let distance = Math.sqrt(x*x + y*y);
+            if (distance > maxRadius) {
+                x = (x / distance) * maxRadius;
+                y = (y / distance) * maxRadius;
+            }
+
+            knob.style.transform = `translate(${x}px, ${y}px)`;
+
+            joyX = Math.round((x / maxRadius) * 100);
+            let rawY = Math.round(-(y / maxRadius) * 100);
+            joyY = Math.max(0, rawY); 
+        }
+
+        function resetJoystick() {
+            knob.style.transform = `translate(0px, 0px)`;
+            joyX = 0;
+            joyY = 0; 
+        }
+
+        container.addEventListener('mousemove', (e) => { if(e.buttons === 1) handleTouch(e); });
+        container.addEventListener('mouseleave', resetJoystick);
+        container.addEventListener('mouseup', resetJoystick);
+
+        container.addEventListener('touchmove', handleTouch, {passive: false});
+        container.addEventListener('touchend', resetJoystick);
+    </script>
+</body>
+</html>
