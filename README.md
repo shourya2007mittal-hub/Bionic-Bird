@@ -31,4 +31,5 @@ I made a bionic butterfly based on a custom ESP32 Board that holds an IMU and a 
 <img width="1350" height="727" alt="Screenshot 2026-06-25 214453" src="https://github.com/user-attachments/assets/0a2d3152-38c3-46d0-b768-540ad1b117b9" />
 <img width="862" height="635" alt="Screenshot 2026-06-25 214513" src="https://github.com/user-attachments/assets/423143ec-9abc-4c42-855b-803289f70dd6" />
 
-![Uploading Screenshot 2026-06-25 214245.png…]()
+<img width="938" height="726" alt="Screenshot 2026-06-25 214245" src="https://github.com/user-attachments/assets/83ae4509-39ce-4949-aa63-7df210b093bf" />
+
