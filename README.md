@@ -14,6 +14,30 @@ I made a bionic butterfly based on a custom ESP32 Board that holds an IMU and a 
 - Uses 2 High torque Servoes
 - Would have LED strips on the wings
 
+
+## Components BOM
+
+| Item | Quantity | Price (USD) | Source |
+|------|------------|------------|---------|
+| PCBA | - | $129.29 | JLCPCB |
+| PCB Shipping | - | $11.99 | JLCPCB |
+| High Torque Servo | 2 | $22.04 (for 2) | https://robu.in/product/waveshare-2-3kg-dual-axis-serial-bus-servo/ |
+| LED Strip | 1 | $3.82 | https://robu.in/product/5m-neon-light-dance-party-decor-light-neon-led-lamp-flexible-el-wire-rope-tube-waterproof-led-strip-only-el-wire-yellow/ |
+
+## Cost Summary
+
+| Item | Cost (USD) |
+|------|------------|
+| PCBA | $129.29 |
+| PCB Shipping | $11.99 |
+| High Torque Servo (2 units) | $22.04 |
+| LED Strip | $3.82 |
+
+**Total Estimated Cost:** **$167.14**
+
+
+
+
 ### Schematic
 
 <img width="1192" height="762" alt="Screenshot 2026-06-23 225450" src="https://github.com/user-attachments/assets/14c6e072-cb8e-4b78-abf6-d55733e070d6" />
